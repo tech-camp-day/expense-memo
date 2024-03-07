@@ -12,7 +12,7 @@ const client = new line.messagingApi.MessagingApiClient({
   channelAccessToken: config.channelAccessToken,
 });
 
-router.post('/', line.middleware(config), (req, res) => {
+router.post('/', (req, res) => {
   Promise
     .all(req.body.events.map(handleEvent))
     .then((result) => res.json(result));
