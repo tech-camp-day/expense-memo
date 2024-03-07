@@ -8,7 +8,7 @@ router.post('/transactions', (req, res) => {
 
   try {
     saveTransaction(name, amount);
-    res.status(201);
+    res.status(201).send();
   } catch (error) {
     res.status(500).json(e);
   }
