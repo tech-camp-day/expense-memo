@@ -12,12 +12,13 @@ const saveTransaction = (name, amount) => {
 };
 
 const getReport = (lookbackDays) => {
-  const getTransactions = db.prepare(`select * from transactions where date >= date("now", "-${lookbackDays} days")`);
-  const getTotalAmount = db.prepare(`select sum(amount) as totalAmount from transactions where date >= date("now", "-${lookbackDays} days")`);
+  const lookbackPreparedStr = `-${lookbackDays} days`;
+  const getTransactions = db.prepare(`select * from transactions where datetime(date) >= datetime('now', ?)`);
+  const getTotalAmount = db.prepare(`select sum(amount) as totalAmount from transactions where datetime(date) >= datetime('now', ?)`);
   
   try {
-    const transactions = getTransactions.all();
-    const totalAmount = getTotalAmount.get().totalAmount;
+    const transactions = getTransactions.all(lookbackPreparedStr);
+    const totalAmount = getTotalAmount.get(lookbackPreparedStr).totalAmount;
     
     return { transactions, totalAmount };
   } catch (error) {

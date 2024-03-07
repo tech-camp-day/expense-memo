@@ -12,7 +12,10 @@
     "y": {
       "name": "Start",
       "command": "npm start",
-      "runAtStart": true
+      "runAtStart": true,
+      "preview": {
+        "port": 3000
+      }
     }
   }
 }
