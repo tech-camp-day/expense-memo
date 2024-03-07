@@ -1,5 +1,5 @@
 const express = require('express');
-const { saveTransaction, getReport } = require('../data/service');
+const { saveTransaction, getReport } = require('../data/db');
 const router = express.Router();
 
 
