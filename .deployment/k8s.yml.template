@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expense-memo-bot-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: expense-memo-bot
+  template:
+    metadata:
+      labels:
+        app: expense-memo-bot
+    spec:
+      containers:
+      - name: expense-memo-bot
+        image: ${IMAGE}
+        ports:
+        - containerPort: 3000
+        env:
+          - name: LINE_CHANNEL_ACCESS_TOKEN
+            value: ${LINE_CHANNEL_ACCESS_TOKEN}
+          - name: LINE_CHANNEL_SECRET
+            value: ${LINE_CHANNEL_SECRET}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: expense-memo-bot-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: expense-memo-bot

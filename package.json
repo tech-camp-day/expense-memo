@@ -4,7 +4,8 @@
   "description": "Collect and manage your expenses with LINE Bot",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
   },
   "author": "",
   "license": "ISC",
