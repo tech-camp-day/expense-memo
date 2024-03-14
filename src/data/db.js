@@ -1,4 +1,4 @@
-const db = require('better-sqlite3')('expense-memo.db', { verbose: console.log });
+const db = require('better-sqlite3')('./db/expense-memo.db', { verbose: console.log });
 
 /**
  * กำหนดค่าเริ่มต้นให้ฐานข้อมูลโดยการสร้างตารางที่จำเป็นหากยังไม่มีอยู่
