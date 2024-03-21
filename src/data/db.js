@@ -47,7 +47,7 @@ function createUser(lineUserId) {
 function deleteUser(lineUserId) {
   const deleteUser = db.prepare('delete from users where lineUserId = ?');
   const deleteTransaction = db.prepare('delete from transactions where lineUserId = ?');
-  
+
   db.transaction(() => {
     deleteUser.run(lineUserId);
     deleteTransaction.run(lineUserId);
@@ -64,6 +64,16 @@ function deleteUser(lineUserId) {
 function saveTransaction(lineUserId, name, amount) {
   const insertTransaction = db.prepare('insert into transactions (lineUserId, name, amount) values (?, ?, ?)');
   insertTransaction.run(lineUserId, name, amount);
+}
+
+/**
+ * ลบธุรกรรมตามรหัสไอดีออกจากฐานข้อมูล
+ * @param {number} id - รหัสไอดีของธุรกรรมที่ต้องการลบ
+ * @throws {Error} เมื่อเกิดข้อผิดพลาดในการลบธุรกรรม
+ */
+function deleteTransactionById(id) {
+  const deleteTransaction = db.prepare('delete from transactions where id = ?');
+  deleteTransaction.run(id);
 }
 
 const intervalTypes = ['days', 'months', 'years'];
@@ -91,4 +101,17 @@ function getReport(lineUserId, lookback, interval) {
   return { transactions, totalAmount };
 };
 
-module.exports = { createUser, deleteUser, saveTransaction, getReport };
+/**
+ * ดึงธุรกรรมล่าสุด n รายการ
+ * @param {string} lineUserId - ไอดีของผู้ใช้ในไลน์
+ * @param {number} n - จำนวนธุรกรรมที่ต้องการดึง
+ * @returns {Array} อาร์เรย์ของธุรกรรมล่าสุด n รายการ
+ * @throws {Error} เมื่อเกิดข้อผิดพลาดในการดึงธุรกรรม
+ */
+function getLatestTransactions(lineUserId, n) {
+  const getTransactions = db.prepare(`select * from transactions where lineUserId = ? order by date desc limit ?`);
+  const transactions = getTransactions.all(lineUserId, n);
+  return transactions;
+}
+
+module.exports = { createUser, deleteUser, saveTransaction, deleteTransactionById, getReport, getLatestTransactions };
