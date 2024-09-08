@@ -4,7 +4,7 @@ const {
   saveTransaction,
   getReport,
 } = require("../data/db");
-const { MESSAGE_LANG } = require("./message");
+const MESSAGE_LANG = require("./message");
 const { reply } = require("./messageSender");
 
 /**

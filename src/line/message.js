@@ -1,4 +1,4 @@
-export const MESSAGE_LANG = {
+const MESSAGE_LANG = {
   th: {
     HELLO: 'สวัสดีครับ ให้ผมช่วยจดรายจ่ายให้คุณนะครับ',
     HOWTO: `วิธีใช้บอท
@@ -42,3 +42,5 @@ export const MESSAGE_LANG = {
     INTERVAL_YEAR: 'years'
   }
 }
+
+module.exports = MESSAGE_LANG
