@@ -1,38 +1,47 @@
-const { createUser, deleteUser, saveTransaction, getReport } = require('../data/db');
-const { reply } = require('./messageSender');
-
-const howTo = `วิธีใช้บอท
-1. พิมพ์ "จด" ตามด้วยชื่อรายการและจำนวนเงินที่จ่ายไป เช่น "จด อาหาร 100" หรือ "จด ขนม ของใช้ 500"
-2. พิมพ์ "รายงาน" ตามด้วยจำนวนวันที่ต้องการดูย้อนหลังและช่วงเวลาที่ต้องการดูย้อนหลัง เช่น "รายงาน 7 วัน" หรือ "รายงาน 1 เดือน"`;
-
-const intervalTypes = ['วัน', 'เดือน', 'ปี'];
+const {
+  createUser,
+  deleteUser,
+  saveTransaction,
+  getReport,
+} = require("../data/db");
+const { MESSAGE_LANG } = require("./message");
+const { reply } = require("./messageSender");
 
 /**
  * จัดการกับเหตุการณ์ที่เข้ามา, ตรวจสอบประเภทของเหตุการณ์และส่งไปยังฟังก์ชันที่เหมาะสม
  * @param {object} event - อ็อบเจ็กต์เหตุการณ์
  */
-function handleEvent(event) {
-  switch (event.type) {
-    case 'message':
-      handleMessage(event);
-      break;
-    case 'follow':
-      handleFollow(event);
-      break;
-    case 'unfollow':
-      handleUnfollow(event);
-      break;
-    default:
-      break;
+function handleEvent(lang) {
+  const languages = Object.keys(MESSAGE_LANG);
+  if (!languages.includes(lang)) {
+    console.warn(`Unknown language: ${lang}, using English as default`);
+    lang = "en";
   }
+
+  return (event) => {
+    const txt = MESSAGE_LANG[lang];
+    switch (event.type) {
+      case "message":
+        handleMessage(event, txt);
+        break;
+      case "follow":
+        handleFollow(event, txt);
+        break;
+      case "unfollow":
+        handleUnfollow(event);
+        break;
+      default:
+        break;
+    }
+  };
 }
 
 /**
  * จัดการกับเหตุการณ์ 'follow' ส่งข้อความทักทายและสร้างผู้ใช้ในฐานข้อมูล
  * @param {object} event - อ็อบเจ็กต์เหตุการณ์
  */
-function handleFollow(event) {
-  reply(event, 'สวัสดีครับ ให้ผมช่วยจดรายจ่ายให้คุณนะครับ', howTo);
+function handleFollow(event, txt) {
+  reply(event, txt.HELLO, txt.HOWTO);
   createUser(event.source.userId);
 }
 
@@ -48,22 +57,22 @@ function handleUnfollow(event) {
  * จัดการกับเหตุการณ์ข้อความที่เข้ามา ตรวจสอบคำสั่งและส่งไปยังฟังก์ชันที่เหมาะสม
  * @param {object} event - อ็อบเจ็กต์เหตุการณ์ข้อความ
  */
-function handleMessage(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
+function handleMessage(event, txt) {
+  if (event.type !== "message" || event.message.type !== "text") {
     return;
   }
 
-  const [command] = event.message.text.split(' ');
-  
+  const [command] = event.message.text.split(" ");
+
   switch (command) {
-    case 'จด':
-      handleSave(event);
+    case txt.NOTE:
+      handleSave(event, txt);
       return;
-    case 'รายงาน':
-      handleReport(event);
+    case txt.REPORT:
+      handleReport(event, txt);
       return;
     default:
-      reply(event, 'ไม่เข้าใจคำสั่งจ้า', howTo);
+      reply(event, txt.UNKNOWN_COMMAND, txt.HOWTO);
       return;
   }
 }
@@ -72,24 +81,25 @@ function handleMessage(event) {
  * จัดการคำสั่ง "จด" โดยแยกชื่อและจำนวนเงินจากข้อความที่กำหนดและบันทึกธุรกรรม
  * @param {object} event - อ็อบเจ็กต์เหตุการณ์
  */
-function handleSave(event) {
-  const words = event.message.text.split(' ');
-  const transactionName = words.slice(1, -1).join(' ');
+function handleSave(event, txt) {
+  const words = event.message.text.split(" ");
+  const transactionName = words.slice(1, -1).join(" ");
   const amount = words.pop();
   const amountNumber = parseFloat(amount);
-  
+
   const lineUserId = event.source.userId;
-  
+
   if (isNaN(amountNumber)) {
-    reply(event, 'จำนวนเงินไม่ถูกต้อง');
+    reply(event, txt.INCORRECT_AMOUNT);
     return;
   }
-  
+
   try {
     saveTransaction(lineUserId, transactionName, amountNumber);
-    reply(event, 'บันทึกข้อมูลเรียบร้อย');
+    reply(event, txt.SAVE_COMPLETE);
   } catch (error) {
-    reply(event, 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    console.error('Error saving transaction:', error);
+    reply(event, txt.SAVE_ERROR);
   }
 }
 
@@ -97,41 +107,52 @@ function handleSave(event) {
  * จัดการคำสั่ง "รายงาน" และสร้างรายงานของธุรกรรมตามพารามิเตอร์ที่กำหนด
  * @param {Object} event - อ็อบเจ็กต์เหตุการณ์ที่มีข้อความและข้อมูลต้นทาง
  */
-function handleReport(event) {
-  const words = event.message.text.split(' ');
+function handleReport(event, txt) {
+  const words = event.message.text.split(" ");
   const length = Number.parseInt(words[1]);
   const interval = words[2];
   const lineUserId = event.source.userId;
+  const intervalTypes = [
+    txt.INTERVAL_DAY,
+    txt.INTERVAL_MONTH,
+    txt.INTERVAL_YEAR,
+  ];
 
   if (words.length !== 3) {
-    reply(event, 'คำสั่งไม่ถูกต้อง', howTo);
+    reply(event, txt.INCORRECT_COMMAND, txt.HOWTO);
     return;
   }
 
   if (isNaN(length) || length < 1) {
-    reply(event, 'ระยะเวลาไม่ถูกต้อง ระบุเป็นจำนวนเต็มบวกได้เท่านั้น');
+    reply(event, txt.INCORRECT_DATE_LENGTH);
     return;
   }
 
   if (!intervalTypes.includes(interval)) {
-    reply(event, 'ช่วงเวลาไม่ถูกต้อง ระบุเป็น "วัน", "เดือน", หรือ "ปี" ได้เท่านั้น');
+    reply(event, txt.INCORRECT_DATE_INTERVAL);
     return;
   }
 
   let intervalDbType;
-  if (interval === 'วัน') {
-    intervalDbType = 'days';
-  } else if (interval === 'เดือน') {
-    intervalDbType = 'months';
+  if (interval === txt.INTERVAL_DAY) {
+    intervalDbType = "days";
+  } else if (interval === txt.INTERVAL_MONTH) {
+    intervalDbType = "months";
   } else {
-    intervalDbType = 'years';
+    intervalDbType = "years";
   }
 
-  const { transactions, totalAmount } = getReport(lineUserId, length, intervalDbType);
+  const { transactions, totalAmount } = getReport(
+    lineUserId,
+    length,
+    intervalDbType
+  );
 
-  let message = `รายงานธุรกรรมย้อนหลัง ${length} ${interval} ที่ผ่านมา
-  จำนวนธุรกรรม: ${transactions}
-  ยอดเงินรวม: ${totalAmount} บาท`;
+  let message = txt.REPORT_MESSAGE.replace("{length}", length)
+    .replace("{interval}", interval)
+    .replace("{transactions}", transactions)
+    .replace("{totalAmount}", totalAmount)
+    .replace("{totalAmount}", totalAmount);
 
   reply(event, message);
 }
