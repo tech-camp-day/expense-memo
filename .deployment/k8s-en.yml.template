@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: expense-memo-bot-deployment
+  name: expense-memo-bot-en-deployment
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: expense-memo-bot
+      app: expense-memo-bot-en
   template:
     metadata:
       labels:
-        app: expense-memo-bot
+        app: expense-memo-bot-en
     spec:
       containers:
-      - name: expense-memo-bot
+      - name: expense-memo-bot-en
         image: ${IMAGE}
         ports:
         - containerPort: 3000
@@ -27,17 +27,17 @@ spec:
           - name: BOT_LANG
             value: ${BOT_LANG}
         volumeMounts:
-          - name: expense-memo-bot-db
+          - name: expense-memo-bot-en-db
             mountPath: /app/db
       volumes:
-        - name: expense-memo-bot-db
+        - name: expense-memo-bot-en-db
           persistentVolumeClaim:
-            claimName: expense-memo-bot-pvc
+            claimName: expense-memo-bot-en-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: expense-memo-bot-pvc
+  name: expense-memo-bot-en-pvc
 spec:
   accessModes:
     - ReadWriteOnce
@@ -48,26 +48,26 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: expense-memo-bot-service
+  name: expense-memo-bot-en-service
 spec:
   type: ClusterIP
   ports:
     - port: 80
       targetPort: 3000
   selector:
-    app: expense-memo-bot
+    app: expense-memo-bot-en
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: expense-memo-bot-ingress
+  name: expense-memo-bot-en-ingress
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
   - hosts: [${DOMAIN}]
-    secretName: expense-memo-bot-tls
+    secretName: expense-memo-bot-en-tls
   rules:
     - host: ${DOMAIN}
       http:
@@ -76,6 +76,6 @@ spec:
             path: /
             backend:
               service:
-                name: expense-memo-bot-service
+                name: expense-memo-bot-en-service
                 port:
                   number: 80
